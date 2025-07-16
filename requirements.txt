@@ -1,2 +1,5 @@
 nicegui
 pywebview
+yt-dlp[default]
+sqlite3
+python-dotenv
