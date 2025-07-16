@@ -1,6 +1,6 @@
-from nicegui import native, ui, app
-from app.startup import startup
+from nicegui import app as nicegui_app, native, ui
+from app.gui.pages import setup_pages
 
-app.on_startup(startup)
+nicegui_app.on_startup(setup_pages)
 
-ui.run(port=native.find_open_port())
+ui.run(native=False, port=native.find_open_port())
