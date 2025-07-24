@@ -19,7 +19,7 @@ class DatabaseManager:
         Létrehozza a kapcsolatot az SQLite adatbázissal.
         """
         try:
-            self.conn = sqlite3.connect(self.database_file)
+            self.conn = sqlite3.connect(self.database_file, check_same_thread=False)
             self.cursor = self.conn.cursor()
             print(f"Sikeresen csatlakozva az adatbázishoz: {self.database_file}")
         except sqlite3.Error as e:
