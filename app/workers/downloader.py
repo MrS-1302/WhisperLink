@@ -5,6 +5,8 @@ import requests
 from PIL import Image
 from io import BytesIO
 
+from app.utils.database_structure import db
+
 class QuietLogger:
     def debug(self, msg): pass
     def warning(self, msg): pass
@@ -19,6 +21,7 @@ class DownloadStatus:
         self.downloaded_bytes = 0
         self.speed = None
         self.eta = None
+        self.link_id = None
 
     def update(self, d):
         self.status = d.get('status', self.status)
@@ -43,20 +46,24 @@ class Downloader:
         self.status.update(d)
 
     def download(self):
+        db.execute("INSERT INTO links (Link, Title) VALUES (?, ?)", (self.url, ''))
+        row = db.fetch_one("SELECT LinkID FROM links ORDER BY LinkID DESC LIMIT 1")
+        self.link_id = row[0] if row else None
+
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
-            'outtmpl': os.path.join(self.storage_dir, '%(title)s - %(id)s.%(ext)s'),
+            'outtmpl': os.path.join(self.storage_dir, str(self.link_id)+'.%(ext)s'),
             'noplaylist': True,
             'quiet': True,
             'logger': QuietLogger(),
             'progress_hooks': [self._hook],
             'rate_limit': 512 * 1024,  # 512 KB/s
         }
-
+    
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             self.info = ydl.extract_info(self.url, download=False)
-
-        self._download_thumbnail()
+            db.execute("UPDATE links SET Title = ? WHERE LinkID = ?", (self.info.get('title'), self.link_id))
+            self._download_thumbnail()
 
     def _download_thumbnail(self):
         thumb_url = self.info.get('thumbnail')
@@ -68,7 +75,7 @@ class Downloader:
             response.raise_for_status()
 
             image = Image.open(BytesIO(response.content)).convert('RGB')
-            thumb_filename = f"{self.info['title']} - {self.info['id']}.webp"
+            thumb_filename = f"{self.link_id}.webp"
             thumb_path = os.path.join(self.storage_dir, thumb_filename)
             image.save(thumb_path, 'WEBP', quality=85)
 
