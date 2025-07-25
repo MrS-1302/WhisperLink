@@ -6,7 +6,8 @@ from . import page_settings
 def setup_pages():
     @ui.page('/')
     async def main_page():
-        await page_main.create()
+        mainPage = page_main.MainPage()
+        await mainPage.create()
 
     @ui.page('/settings')
     def settings_page():
